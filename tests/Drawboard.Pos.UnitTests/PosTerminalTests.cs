@@ -1,3 +1,4 @@
+using Drawboard.Contracts.Exceptions;
 using Drawboard.Entities.Entities;
 using Drawboard.PosTerminal;
 using Drawboard.PosTerminal.Abstractions;
@@ -196,7 +197,7 @@ public class PosTerminalTests
         const string productCodeX = "X";
 
         _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeX))
-            .Returns(() => null);
+            .Returns(() => throw new ProductNotFoundException($"Product with code '{productCodeX}' not found"));
 
         _posTerminal.Scan(productCodeX);
 
@@ -204,7 +205,7 @@ public class PosTerminalTests
         
         Assert.Multiple(() =>
         {
-            Assert.That(_messenger.WarningMessage, Is.EqualTo("Sorry, the input is not recognized."));
+            Assert.That(_messenger.WarningMessage, Is.EqualTo("Sorry, product with code 'X' not found!"));
             Assert.That(_messenger.InfoMessage, Contains.Substring("with Total Price '0' and Total Count '0'"));
         });
         
