@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <ProjectReference Include="..\Drawboard.Contracts\Drawboard.Contracts.csproj" />
+        <ProjectReference Include="..\Drawboard.Entities\Drawboard.Entities.csproj" />
+    </ItemGroup>
+
+</Project>

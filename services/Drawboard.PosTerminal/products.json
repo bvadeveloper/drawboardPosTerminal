@@ -1,0 +1,28 @@
+{
+  "Products": [
+    {
+      "productCode": "A",
+      "unitPrice": 1.25,
+      "packPrice": 3.00,
+      "discountNumberItems": 3
+    },
+    {
+      "productCode": "B",
+      "unitPrice": 4.25,
+      "packPrice": 0,
+      "discountNumberItems": 0
+    },
+    {
+      "productCode": "C",
+      "unitPrice": 1,
+      "packPrice": 5,
+      "discountNumberItems": 6
+    },
+    {
+      "productCode": "D",
+      "unitPrice": 0.75,
+      "packPrice": 0,
+      "discountNumberItems": 0
+    }    
+  ]
+}
