@@ -33,39 +33,39 @@ public class PosTerminalLocal : IPosTerminal
     /// <param name="code">scan code.</param>
     public void Scan(string code)
     {
-        if (IsValidInput(code))
+        if (!IsValidInput(code))
         {
-            try
-            {
-                var productEntity = _productStockRepository.FindProductByCode(code);
-                var (productCode, cost, count) = _receipt.CalculateDiscount(productEntity);
-
-                _receipt.ReceiptItems.AddOrUpdateItem(productCode, cost, count);
-                
-                return;
-            }
-            catch (ProductNotFoundException productNotFoundException)
-            {
-                // show message for user
-                _messenger.ShowWarning($"Sorry, product with code '{code}' not found!");
-                _logger.LogWarning(productNotFoundException, $"A product not found exception occurred with error id '{productNotFoundException.ErrorContextId}'. Receipt Id '{_receipt.ReceiptId}'.");
-                
-                return;
-            }
-
-            // do all stuff for alerting here for unhandled exceptions (pagerduty, send message to hot chanel, etc)
-
-            catch (BusinessException businessException)
-            {
-                _logger.LogError(businessException, $"A business exception occurred with error Id '{businessException.ErrorContextId}'. Exception message '{businessException.Message}'. Receipt Id '{_receipt.ReceiptId}'");
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, $"An unhandled exception occurred. Exception message '{exception.Message}'. Receipt Id '{_receipt.ReceiptId}'");
-            }
+            _messenger.ShowWarning("Sorry, the input is not recognized.");
+            return;
         }
 
-        _messenger.ShowWarning("Sorry, the input is not recognized.");
+        try
+        {
+            var productEntity = _productStockRepository.FindProductByCode(code);
+            var (productCode, cost, count) = _receipt.CalculateDiscount(productEntity);
+
+            _receipt.ReceiptItems.AddOrUpdateItem(productCode, cost, count);
+        }
+        catch (ProductNotFoundException productNotFoundException)
+        {
+            // show message for user
+            _messenger.ShowWarning($"Sorry, product with code '{code}' not found!");
+            _logger.LogWarning(productNotFoundException,
+                $"A product not found exception occurred with error id '{productNotFoundException.ErrorContextId}'. Receipt Id '{_receipt.ReceiptId}'.");
+        }
+
+        // do all stuff for alerting here for unhandled exceptions (pagerduty, send message to hot chanel, etc)
+
+        catch (BusinessException businessException)
+        {
+            _logger.LogError(businessException,
+                $"A business exception occurred with error Id '{businessException.ErrorContextId}'. Exception message '{businessException.Message}'. Receipt Id '{_receipt.ReceiptId}'");
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception,
+                $"An unhandled exception occurred. Exception message '{exception.Message}'. Receipt Id '{_receipt.ReceiptId}'");
+        }
     }
 
     /// <summary>
@@ -76,8 +76,10 @@ public class PosTerminalLocal : IPosTerminal
         var totalCost = _receipt.ReceiptItems.Sum(pair => pair.Value.Cost);
         var totalCount = _receipt.ReceiptItems.Sum(pair => pair.Value.Count);
         var message = $"Receipt Id '{_receipt.ReceiptId}' with Total Price '{totalCost}' and Total Count '{totalCount}'";
-        
+
         _messenger.ShowInfo(message);
+        
+        // calling hardware management subsystem ...
     }
 
     /// <summary>
