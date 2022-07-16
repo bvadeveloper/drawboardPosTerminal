@@ -1,9 +1,9 @@
 ﻿namespace Drawboard.PosTerminal.Abstractions;
 
 /// <summary>
-/// Base interface for user notification
+/// Base interface for communication with user
 /// </summary>
-public interface IMessenger
+public interface IUserInterface
 {
     /// <summary>
     /// Show warning message for user

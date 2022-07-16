@@ -25,7 +25,7 @@ namespace Drawboard.PosTerminal
                     services
                         .AddHostedService<Seller>()
                         .AddScoped<IPosTerminal, PosTerminalLocal>()
-                        .AddScoped<IMessenger, ConsoleMessenger>()
+                        .AddScoped<IUserInterface, UserInterfaceConsole>()
                         .AddScoped<IProductStockRepository, ProductStockRepositoryLocal>();
 
                     services.Configure<List<ProductEntity>>(options =>

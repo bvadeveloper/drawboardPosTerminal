@@ -10,18 +10,18 @@ namespace Drawboard.PosTerminal;
 public class PosTerminalLocal : IPosTerminal
 {
     private readonly IProductStockRepository _productStockRepository;
-    private readonly IMessenger _messenger;
+    private readonly IUserInterface _userInterface;
     private readonly ILogger _logger;
 
     private readonly ReceiptEntity _receipt;
 
     public PosTerminalLocal(
         IProductStockRepository productStockRepository,
-        IMessenger messenger,
+        IUserInterface userInterface,
         ILogger<PosTerminalLocal> logger)
     {
         _productStockRepository = productStockRepository;
-        _messenger = messenger;
+        _userInterface = userInterface;
         _logger = logger;
 
         _receipt = ReceiptEntity.New;
@@ -35,7 +35,7 @@ public class PosTerminalLocal : IPosTerminal
     {
         if (!IsValidInput(code))
         {
-            _messenger.ShowWarning("Sorry, the input is not recognized.");
+            _userInterface.ShowWarning("Sorry, the input is not recognized.");
             return;
         }
 
@@ -49,7 +49,7 @@ public class PosTerminalLocal : IPosTerminal
         catch (ProductNotFoundException productNotFoundException)
         {
             // show message for user
-            _messenger.ShowWarning($"Sorry, product with code '{code}' not found!");
+            _userInterface.ShowWarning($"Sorry, product with code '{code}' not found!");
             _logger.LogWarning(productNotFoundException,
                 $"A product not found exception occurred with error id '{productNotFoundException.ErrorContextId}'. Receipt Id '{_receipt.ReceiptId}'.");
         }
@@ -77,7 +77,7 @@ public class PosTerminalLocal : IPosTerminal
         var totalCount = _receipt.ReceiptItems.Sum(pair => pair.Value.Count);
         var message = $"Receipt Id '{_receipt.ReceiptId}' with Total Price '{totalCost}' and Total Count '{totalCount}'";
 
-        _messenger.ShowInfo(message);
+        _userInterface.ShowInfo(message);
         
         // calling hardware management subsystem ...
     }

@@ -12,41 +12,43 @@ namespace Drawboard.Pos.UnitTests;
 public class PosTerminalTests
 {
     private IPosTerminal _posTerminal;
-    private TestMessenger _messenger;
+    private UserInterfaceTest _userInterfaceTest;
     private Mock<IProductStockRepository> _productStockRepository;
+
+    private readonly ProductEntity _productA = new("A", 1.25m, 3.00m, 3);
+    private readonly ProductEntity _productB = new("B", 4.25m, 0m, 0);
+    private readonly ProductEntity _productC = new("C", 1m, 5m, 6);
+    private readonly ProductEntity _productD = new("D", 0.75m, 0m, 0);
 
     [SetUp]
     public void Setup()
     {
-        _messenger = new TestMessenger();
+        _userInterfaceTest = new UserInterfaceTest();
         _productStockRepository = new Mock<IProductStockRepository>();
-        _posTerminal = new PosTerminalLocal(_productStockRepository.Object, _messenger,
+        _posTerminal = new PosTerminalLocal(_productStockRepository.Object, _userInterfaceTest,
             new Mock<ILogger<PosTerminalLocal>>().Object);
     }
 
     /// <summary>
     /// Test product A
     /// </summary>
-    /// <param name="productCode"></param>
-    /// <param name="unitPrice"></param>
-    /// <param name="packPrice"></param>
-    /// <param name="discountNumberItems"></param>
     [Test]
-    [TestCase("A", 1.25, 3.00, 3)]
-    public void TestProduct_A(string productCode, decimal unitPrice, decimal packPrice, int discountNumberItems)
+    public void Scan_product_A_as_result_valid_receipt_data()
     {
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCode))
-            .Returns(() => new ProductEntity(productCode, unitPrice, packPrice, discountNumberItems));
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productA.ProductCode))
+            .Returns(() => _productA);
 
-        _posTerminal.Scan(productCode);
-        _posTerminal.PrintReceipt();
+        _posTerminal.Scan(_productA.ProductCode);
         
+        _posTerminal.PrintReceipt();
+
         Assert.Multiple(() =>
         {
-            Assert.That(_messenger.InfoMessage, Contains.Substring("with Total Price '1.25' and Total Count '1'"));
-            Assert.That(_messenger.WarningMessage, Is.Null);
+            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '1.25' and Total Count '1'"));
+            Assert.That(_userInterfaceTest.WarningMessage, Is.Null);
         });
-        
+
         _productStockRepository.VerifyAll();
     }
 
@@ -54,74 +56,73 @@ public class PosTerminalTests
     /// Scan products in order ABCD
     /// </summary>
     [Test]
-    public void TestProducts_ABCD()
+    public void Scan_products_in_order_ABCD_as_result_valid_receipt_data()
     {
-        const string productCodeA = "A";
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productA.ProductCode))
+            .Returns(() => _productA);
 
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeA))
-            .Returns(() => new ProductEntity(productCodeA, 1.25m, 3.00m, 3));
-
-        _posTerminal.Scan(productCodeA);
-
-        const string productCodeB = "B";
-
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeB))
-            .Returns(() => new ProductEntity(productCodeB, 4.25m, 0m, 0));
-
-        _posTerminal.Scan(productCodeB);
-
-        const string productCodeC = "C";
-
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeC))
-            .Returns(() => new ProductEntity(productCodeC, 1m, 5m, 6));
-
-        _posTerminal.Scan(productCodeC);
-
-        const string productCodeD = "D";
-
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeD))
-            .Returns(() => new ProductEntity(productCodeD, 0.75m, 0m, 0));
-
-        _posTerminal.Scan(productCodeD);
-
-        _posTerminal.PrintReceipt();
+        _posTerminal.Scan(_productA.ProductCode);
         
+        
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productB.ProductCode))
+            .Returns(() => _productB);
+
+        _posTerminal.Scan(_productB.ProductCode);
+
+        
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productC.ProductCode))
+            .Returns(() => _productC);
+
+        _posTerminal.Scan(_productC.ProductCode);
+
+        
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productD.ProductCode))
+            .Returns(() => _productD);
+
+        _posTerminal.Scan(_productD.ProductCode);
+
+        
+        _posTerminal.PrintReceipt();
+
         Assert.Multiple(() =>
         {
-            Assert.That(_messenger.InfoMessage, Contains.Substring("with Total Price '7.25' and Total Count '4'"));
-            Assert.That(_messenger.WarningMessage, Is.Null);
+            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '7.25' and Total Count '4'"));
+            Assert.That(_userInterfaceTest.WarningMessage, Is.Null);
         });
-        
+
         _productStockRepository.VerifyAll();
     }
-
+    
     /// <summary>
     /// Scan products in order CCCCCCC
     /// </summary>
     [Test]
-    public void TestProducts_CCCCCCC()
+    public void Scan_products_in_order_CCCCCCC_as_result_valid_receipt_data()
     {
-        const string productCodeC = "C";
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productC.ProductCode))
+            .Returns(() => _productC);
 
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeC))
-            .Returns(() => new ProductEntity(productCodeC, 1m, 5m, 6));
+        _posTerminal.Scan(_productC.ProductCode);
+        _posTerminal.Scan(_productC.ProductCode);
+        _posTerminal.Scan(_productC.ProductCode);
+        _posTerminal.Scan(_productC.ProductCode);
+        _posTerminal.Scan(_productC.ProductCode);
+        _posTerminal.Scan(_productC.ProductCode);
+        _posTerminal.Scan(_productC.ProductCode);
 
-        _posTerminal.Scan(productCodeC);
-        _posTerminal.Scan(productCodeC);
-        _posTerminal.Scan(productCodeC);
-        _posTerminal.Scan(productCodeC);
-        _posTerminal.Scan(productCodeC);
-        _posTerminal.Scan(productCodeC);
-        _posTerminal.Scan(productCodeC);
-        
         _posTerminal.PrintReceipt();
-        
+
         Assert.Multiple(() =>
         {
-            Assert.That(_messenger.InfoMessage, Contains.Substring("with Total Price '6' and Total Count '7'"));
-            Assert.That(_messenger.WarningMessage, Is.Null);
+            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '6' and Total Count '7'"));
+            Assert.That(_userInterfaceTest.WarningMessage, Is.Null);
         });
-        
+
         _productStockRepository.VerifyAll();
     }
 
@@ -129,62 +130,64 @@ public class PosTerminalTests
     /// Scan products in order ABCDABA
     /// </summary>
     [Test]
-    public void TestProducts_ABCDABA()
+    public void Scan_products_in_order_ABCDABA_as_result_valid_receipt_data()
     {
-        const string productCodeA = "A";
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productA.ProductCode))
+            .Returns(() => _productA);
 
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeA))
-            .Returns(() => new ProductEntity(productCodeA, 1.25m, 3.00m, 3));
-
-        _posTerminal.Scan(productCodeA);
-
-        const string productCodeB = "B";
-
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeB))
-            .Returns(() => new ProductEntity(productCodeB, 4.25m, 0m, 0));
-
-        _posTerminal.Scan(productCodeB);
-
-        const string productCodeC = "C";
-
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeC))
-            .Returns(() => new ProductEntity(productCodeC, 1m, 5m, 6));
-
-        _posTerminal.Scan(productCodeC);
-
-        const string productCodeD = "D";
-
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeD))
-            .Returns(() => new ProductEntity(productCodeD, 0.75m, 0m, 0));
-
-        _posTerminal.Scan(productCodeD);
-
-
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeA))
-            .Returns(() => new ProductEntity(productCodeA, 1.25m, 3.00m, 3));
-
-        _posTerminal.Scan(productCodeA);
-
-
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeB))
-            .Returns(() => new ProductEntity(productCodeB, 4.25m, 0m, 0));
-
-        _posTerminal.Scan(productCodeB);
-
-
-        _productStockRepository.Setup(repository => repository.FindProductByCode(productCodeA))
-            .Returns(() => new ProductEntity(productCodeA, 1.25m, 3.00m, 3));
-
-        _posTerminal.Scan(productCodeA);
-
-        _posTerminal.PrintReceipt();
+        _posTerminal.Scan(_productA.ProductCode);
         
+        
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productB.ProductCode))
+            .Returns(() => _productB);
+
+        _posTerminal.Scan(_productB.ProductCode);
+
+        
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productC.ProductCode))
+            .Returns(() => _productC);
+
+        _posTerminal.Scan(_productC.ProductCode);
+
+        
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productD.ProductCode))
+            .Returns(() => _productD);
+
+        _posTerminal.Scan(_productD.ProductCode);
+
+
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productA.ProductCode))
+            .Returns(() => _productA);
+
+        _posTerminal.Scan(_productA.ProductCode);
+        
+        
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productB.ProductCode))
+            .Returns(() => _productB);
+
+        _posTerminal.Scan(_productB.ProductCode);
+        
+        
+        _productStockRepository
+            .Setup(repository => repository.FindProductByCode(_productA.ProductCode))
+            .Returns(() => _productA);
+
+        _posTerminal.Scan(_productA.ProductCode);
+        
+        _posTerminal.PrintReceipt();
+
         Assert.Multiple(() =>
         {
-            Assert.That(_messenger.InfoMessage, Contains.Substring("with Total Price '13.25' and Total Count '7'"));
-            Assert.That(_messenger.WarningMessage, Is.Null);
+            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '13.25' and Total Count '7'"));
+            Assert.That(_userInterfaceTest.WarningMessage, Is.Null);
         });
-        
+
         _productStockRepository.VerifyAll();
     }
 
@@ -192,7 +195,7 @@ public class PosTerminalTests
     /// Product not exist
     /// </summary>
     [Test]
-    public void TestProduct_X()
+    public void Scan_not_exist_product_with_result_product_not_found()
     {
         const string productCodeX = "X";
 
@@ -200,15 +203,15 @@ public class PosTerminalTests
             .Returns(() => throw new ProductNotFoundException($"Product with code '{productCodeX}' not found"));
 
         _posTerminal.Scan(productCodeX);
-
-        _posTerminal.PrintReceipt();
         
+        _posTerminal.PrintReceipt();
+
         Assert.Multiple(() =>
         {
-            Assert.That(_messenger.WarningMessage, Is.EqualTo("Sorry, product with code 'X' not found!"));
-            Assert.That(_messenger.InfoMessage, Contains.Substring("with Total Price '0' and Total Count '0'"));
+            Assert.That(_userInterfaceTest.WarningMessage, Is.EqualTo("Sorry, product with code 'X' not found!"));
+            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '0' and Total Count '0'"));
         });
-        
+
         _productStockRepository.VerifyAll();
     }
 }

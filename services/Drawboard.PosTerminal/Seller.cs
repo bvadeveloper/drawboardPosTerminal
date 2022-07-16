@@ -30,15 +30,6 @@ public class Seller : IHostedService
         // posTerminal.Scan("C");
         // posTerminal.Scan("C");
         // posTerminal.Scan("C");
-        
-        // BBBBBBB
-        // posTerminal.Scan("B");
-        // posTerminal.Scan("B");
-        // posTerminal.Scan("B");
-        // posTerminal.Scan("B");
-        // posTerminal.Scan("B");
-        // posTerminal.Scan("B");
-        // posTerminal.Scan("B");
 
         // ABCDABA
         posTerminal.Scan("A");
