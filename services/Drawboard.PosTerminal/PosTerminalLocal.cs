@@ -46,28 +46,34 @@ public class PosTerminalLocal : IPosTerminal
 
             _receipt.ReceiptItems.AddOrUpdateItem(productCode, cost, count);
         }
-        catch (ProductNotFoundException productNotFoundException)
+        catch (Exception e)
         {
-            // show message for user
-            _userInterface.ShowWarning($"Sorry, product with code '{code}' not found!");
-            _logger.LogWarning(productNotFoundException,
-                $"A product not found exception occurred with error id '{productNotFoundException.ErrorContextId}'. Receipt Id '{_receipt.ReceiptId}'.");
-        }
-
-        // do all stuff for alerting here for unhandled exceptions (pagerduty, send message to hot chanel, etc)
-
-        catch (BusinessException businessException)
-        {
-            _logger.LogError(businessException,
-                $"A business exception occurred with error Id '{businessException.ErrorContextId}'. Exception message '{businessException.Message}'. Receipt Id '{_receipt.ReceiptId}'");
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception,
-                $"An unhandled exception occurred. Exception message '{exception.Message}'. Receipt Id '{_receipt.ReceiptId}'");
+            HandleException(e, code);
         }
     }
 
+    private void HandleException(Exception exception, string code)
+    {
+        switch (exception)
+        {
+            case ProductNotFoundException notFoundException:
+                _userInterface.ShowWarning($"Sorry, product with code '{code}' not found!");
+                _logger.LogWarning(notFoundException, $"A product not found exception occurred with error id '{notFoundException.ErrorContextId}'. Receipt Id '{_receipt.ReceiptId}'.");
+                return;
+
+            case BusinessException businessException:
+                _logger.LogError(businessException, $"A business exception occurred with error Id '{businessException.ErrorContextId}'. Exception message '{businessException.Message}'. Receipt Id '{_receipt.ReceiptId}'");
+                return;
+
+            case Exception ex:
+                _logger.LogError(ex, $"An unhandled exception occurred. Exception message '{ex.Message}'. Receipt Id '{_receipt.ReceiptId}'");
+                return;
+            
+            default: 
+                throw new Exception("Something went wrong with.", exception); // we don't hide the original stack, just keep it in inner exception
+        }
+    }
+    
     /// <summary>
     /// Print all info in receipt
     /// </summary>
@@ -78,7 +84,7 @@ public class PosTerminalLocal : IPosTerminal
         var message = $"Receipt Id '{_receipt.ReceiptId}' with Total Price '{totalCost}' and Total Count '{totalCount}'";
 
         _userInterface.ShowInfo(message);
-        
+
         // calling hardware management subsystem ...
     }
 
