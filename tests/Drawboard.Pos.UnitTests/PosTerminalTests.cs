@@ -2,7 +2,9 @@ using Drawboard.Contracts.Exceptions;
 using Drawboard.Entities.Entities;
 using Drawboard.PosTerminal;
 using Drawboard.PosTerminal.Abstractions;
+using Drawboard.PosTerminal.Discounts;
 using Drawboard.Repositories.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -23,15 +25,18 @@ public class PosTerminalTests
     [SetUp]
     public void Setup()
     {
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddScoped<CountOfProductsDiscountCalculator>();
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        var discountCalculatorFactory = new DiscountCalculatorFactory(serviceProvider);
+        var logger = new Mock<ILogger<PosTerminalLocal>>();
+
         _userInterfaceTest = new UserInterfaceTest();
         _productStockRepository = new Mock<IProductStockRepository>();
-        _posTerminal = new PosTerminalLocal(_productStockRepository.Object, _userInterfaceTest,
-            new Mock<ILogger<PosTerminalLocal>>().Object);
+        _posTerminal = new PosTerminalLocal(_productStockRepository.Object, discountCalculatorFactory, _userInterfaceTest, logger.Object);
     }
-
-    /// <summary>
-    /// Test product A
-    /// </summary>
+    
     [Test]
     public void Scan_product_A_as_result_valid_receipt_data()
     {
@@ -40,21 +45,19 @@ public class PosTerminalTests
             .Returns(() => _productA);
 
         _posTerminal.Scan(_productA.ProductCode);
-        
+
         _posTerminal.PrintReceipt();
 
         Assert.Multiple(() =>
         {
-            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '1.25' and Total Count '1'"));
+            Assert.That(_userInterfaceTest.InfoMessage,
+                Contains.Substring("with Total Cost '$1.25' and Total Count '1'"));
             Assert.That(_userInterfaceTest.WarningMessage, Is.Null);
         });
 
         _productStockRepository.VerifyAll();
     }
-
-    /// <summary>
-    /// Scan products in order ABCD
-    /// </summary>
+    
     [Test]
     public void Scan_products_in_order_ABCD_as_result_valid_receipt_data()
     {
@@ -63,43 +66,41 @@ public class PosTerminalTests
             .Returns(() => _productA);
 
         _posTerminal.Scan(_productA.ProductCode);
-        
-        
+
+
         _productStockRepository
             .Setup(repository => repository.FindProductByCode(_productB.ProductCode))
             .Returns(() => _productB);
 
         _posTerminal.Scan(_productB.ProductCode);
 
-        
+
         _productStockRepository
             .Setup(repository => repository.FindProductByCode(_productC.ProductCode))
             .Returns(() => _productC);
 
         _posTerminal.Scan(_productC.ProductCode);
 
-        
+
         _productStockRepository
             .Setup(repository => repository.FindProductByCode(_productD.ProductCode))
             .Returns(() => _productD);
 
         _posTerminal.Scan(_productD.ProductCode);
 
-        
+
         _posTerminal.PrintReceipt();
 
         Assert.Multiple(() =>
         {
-            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '7.25' and Total Count '4'"));
+            Assert.That(_userInterfaceTest.InfoMessage,
+                Contains.Substring("with Total Cost '$7.25' and Total Count '4'"));
             Assert.That(_userInterfaceTest.WarningMessage, Is.Null);
         });
 
         _productStockRepository.VerifyAll();
     }
     
-    /// <summary>
-    /// Scan products in order CCCCCCC
-    /// </summary>
     [Test]
     public void Scan_products_in_order_CCCCCCC_as_result_valid_receipt_data()
     {
@@ -119,16 +120,13 @@ public class PosTerminalTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '6' and Total Count '7'"));
+            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Cost '$6' and Total Count '7'"));
             Assert.That(_userInterfaceTest.WarningMessage, Is.Null);
         });
 
         _productStockRepository.VerifyAll();
     }
-
-    /// <summary>
-    /// Scan products in order ABCDABA
-    /// </summary>
+    
     [Test]
     public void Scan_products_in_order_ABCDABA_as_result_valid_receipt_data()
     {
@@ -137,22 +135,22 @@ public class PosTerminalTests
             .Returns(() => _productA);
 
         _posTerminal.Scan(_productA.ProductCode);
-        
-        
+
+
         _productStockRepository
             .Setup(repository => repository.FindProductByCode(_productB.ProductCode))
             .Returns(() => _productB);
 
         _posTerminal.Scan(_productB.ProductCode);
 
-        
+
         _productStockRepository
             .Setup(repository => repository.FindProductByCode(_productC.ProductCode))
             .Returns(() => _productC);
 
         _posTerminal.Scan(_productC.ProductCode);
 
-        
+
         _productStockRepository
             .Setup(repository => repository.FindProductByCode(_productD.ProductCode))
             .Returns(() => _productD);
@@ -165,35 +163,33 @@ public class PosTerminalTests
             .Returns(() => _productA);
 
         _posTerminal.Scan(_productA.ProductCode);
-        
-        
+
+
         _productStockRepository
             .Setup(repository => repository.FindProductByCode(_productB.ProductCode))
             .Returns(() => _productB);
 
         _posTerminal.Scan(_productB.ProductCode);
-        
-        
+
+
         _productStockRepository
             .Setup(repository => repository.FindProductByCode(_productA.ProductCode))
             .Returns(() => _productA);
 
         _posTerminal.Scan(_productA.ProductCode);
-        
+
         _posTerminal.PrintReceipt();
 
         Assert.Multiple(() =>
         {
-            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '13.25' and Total Count '7'"));
+            Assert.That(_userInterfaceTest.InfoMessage,
+                Contains.Substring("with Total Cost '$13.25' and Total Count '7'"));
             Assert.That(_userInterfaceTest.WarningMessage, Is.Null);
         });
 
         _productStockRepository.VerifyAll();
     }
-
-    /// <summary>
-    /// Product not exist
-    /// </summary>
+    
     [Test]
     public void Scan_not_exist_product_with_result_product_not_found()
     {
@@ -203,13 +199,13 @@ public class PosTerminalTests
             .Returns(() => throw new ProductNotFoundException($"Product with code '{productCodeX}' not found"));
 
         _posTerminal.Scan(productCodeX);
-        
+
         _posTerminal.PrintReceipt();
 
         Assert.Multiple(() =>
         {
             Assert.That(_userInterfaceTest.WarningMessage, Is.EqualTo("Sorry, product with code 'X' not found!"));
-            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Price '0' and Total Count '0'"));
+            Assert.That(_userInterfaceTest.InfoMessage, Contains.Substring("with Total Cost '$0' and Total Count '0'"));
         });
 
         _productStockRepository.VerifyAll();

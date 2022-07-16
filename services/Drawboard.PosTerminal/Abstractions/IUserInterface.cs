@@ -1,7 +1,7 @@
 ﻿namespace Drawboard.PosTerminal.Abstractions;
 
 /// <summary>
-/// Base interface for communication with user
+/// Interface for communication with user
 /// </summary>
 public interface IUserInterface
 {

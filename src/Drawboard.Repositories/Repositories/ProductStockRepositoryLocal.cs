@@ -8,7 +8,7 @@ namespace Drawboard.Repositories.Repositories;
 public class ProductStockRepositoryLocal : IProductStockRepository
 {
     /// <summary>
-    /// Products data storage
+    /// Products data source
     /// </summary>
     private readonly IEnumerable<ProductEntity> _products;
 

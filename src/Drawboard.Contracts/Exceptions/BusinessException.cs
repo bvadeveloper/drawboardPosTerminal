@@ -1,7 +1,7 @@
 ﻿namespace Drawboard.Contracts.Exceptions;
 
 /// <summary>
-/// Base class for business exception in the system
+/// Base class of exception for business logic
 /// </summary>
 public abstract class BusinessException : Exception
 {

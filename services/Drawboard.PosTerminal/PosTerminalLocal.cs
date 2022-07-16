@@ -1,4 +1,5 @@
-﻿using Drawboard.Contracts.Exceptions;
+﻿using Drawboard.Contracts.Enums;
+using Drawboard.Contracts.Exceptions;
 using Drawboard.Entities.Entities;
 using Drawboard.PosTerminal.Abstractions;
 using Drawboard.PosTerminal.Extensions;
@@ -10,6 +11,7 @@ namespace Drawboard.PosTerminal;
 public class PosTerminalLocal : IPosTerminal
 {
     private readonly IProductStockRepository _productStockRepository;
+    private readonly IDiscountCalculatorFactory _discountCalculatorFactory;
     private readonly IUserInterface _userInterface;
     private readonly ILogger _logger;
 
@@ -17,13 +19,15 @@ public class PosTerminalLocal : IPosTerminal
 
     public PosTerminalLocal(
         IProductStockRepository productStockRepository,
+        IDiscountCalculatorFactory discountCalculatorFactory,
         IUserInterface userInterface,
         ILogger<PosTerminalLocal> logger)
     {
         _productStockRepository = productStockRepository;
+        _discountCalculatorFactory = discountCalculatorFactory;
         _userInterface = userInterface;
         _logger = logger;
-
+        
         _receipt = ReceiptEntity.New;
     }
 
@@ -42,8 +46,11 @@ public class PosTerminalLocal : IPosTerminal
         try
         {
             var productEntity = _productStockRepository.FindProductByCode(code);
-            var (productCode, cost, count) = _receipt.CalculateDiscount(productEntity);
 
+            var (productCode, cost, count) = _discountCalculatorFactory
+                .Make(DiscountType.CountOfProducts)
+                .Calculate(_receipt.ReceiptItems, productEntity);
+            
             _receipt.ReceiptItems.AddOrUpdateItem(productCode, cost, count);
         }
         catch (Exception e)
@@ -68,20 +75,20 @@ public class PosTerminalLocal : IPosTerminal
             case Exception ex:
                 _logger.LogError(ex, $"An unhandled exception occurred. Exception message '{ex.Message}'. Receipt Id '{_receipt.ReceiptId}'");
                 return;
-            
-            default: 
-                throw new Exception("Something went wrong with.", exception); // we don't hide the original stack, just keep it in inner exception
+
+            default: // we don't hide the original stack, just keep it in inner exception
+                throw new Exception("Something went wrong.", exception);
         }
     }
-    
+
     /// <summary>
-    /// Print all info in receipt
+    /// Print all info about purchase
     /// </summary>
     public void PrintReceipt()
     {
         var totalCost = _receipt.ReceiptItems.Sum(pair => pair.Value.Cost);
         var totalCount = _receipt.ReceiptItems.Sum(pair => pair.Value.Count);
-        var message = $"Receipt Id '{_receipt.ReceiptId}' with Total Price '{totalCost}' and Total Count '{totalCount}'";
+        var message = $"Receipt Id '{_receipt.ReceiptId}' with Total Cost '${totalCost}' and Total Count '{totalCount}'";
 
         _userInterface.ShowInfo(message);
 
